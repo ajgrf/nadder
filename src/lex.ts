@@ -12,25 +12,26 @@ export const alphanumeric = alpha + digit;
 export const whitespace = " \t\n\r";
 export const eof = String.fromCharCode(-1);
 
+/** Tag to identify the type of a lexical token. */
+export type TokenTag<T> = T | "EOF" | "Illegal";
+
 /** A Token consists of a type tag attached to the literal string. */
-export class Token {
-  constructor(public type: TokenType, public value: string) {}
+export class Token<T> {
+  constructor(public type: TokenTag<T>, public value: string) {}
 }
 
-/** Tag to the identify the type of a lexical token. */
+/** Lexical categories for tokens. */
 export enum TokenType {
-  EOF,
-  Illegal,
   Ident,
   LParen,
   RParen,
 }
 
 /** The Lexer state as a function returning the new state. */
-export type StateFn = undefined | ((lex: Lexer) => StateFn);
+export type StateFn<T> = undefined | ((lex: Lexer<T>) => StateFn<T>);
 
 /** Generic lexer machinery without language-specific bits. */
-export class Lexer implements Iterable<Token> {
+export class Lexer<T> implements Iterable<Token<T>> {
   /** The string being lexed. */
   private input: string;
   /** Start position of this token. */
@@ -40,12 +41,12 @@ export class Lexer implements Iterable<Token> {
   /** Width of last character read from input. */
   private width: number;
   /** FIFO array of lexed tokens. */
-  private tokens: Token[];
+  private tokens: Token<T>[];
   /** Current lexer state. */
-  private state: StateFn;
+  private state: StateFn<T>;
 
   /** Initialize a Lexer to tokenize `input` given `start` state. */
-  constructor(input: string, start: StateFn) {
+  constructor(input: string, start: StateFn<T>) {
     this.input = input;
     this.start = 0;
     this.pos = 0;
@@ -55,7 +56,7 @@ export class Lexer implements Iterable<Token> {
   }
 
   /** Return the next token. */
-  nextToken(): Token {
+  nextToken(): Token<T> {
     while (true) {
       if (this.tokens.length > 0) {
         return this.tokens.shift()!;
@@ -68,8 +69,8 @@ export class Lexer implements Iterable<Token> {
   }
 
   /** Emit a token with the given TokenType and accepted input. */
-  emit(t: TokenType) {
-    this.tokens.push(new Token(t, this.pending()));
+  emit(t: TokenTag<T>) {
+    this.tokens.push(new Token<T>(t, this.pending()));
     this.start = this.pos;
   }
 
@@ -122,22 +123,22 @@ export class Lexer implements Iterable<Token> {
   }
 
   /** Signal error by emitting an Illegal Token with the given message. */
-  errorf(message: string): StateFn {
-    this.tokens.push(new Token(TokenType.Illegal, message));
+  errorf(message: string): StateFn<T> {
+    this.tokens.push(new Token<T>("Illegal", message));
     return undefined;
   }
 
   // Implement iterator protocol.
-  next(): IteratorResult<Token> {
+  next(): IteratorResult<Token<T>> {
     let tok = this.nextToken();
     return {
       value: tok,
-      done: tok.type === TokenType.EOF,
+      done: tok.type === "EOF",
     };
   }
 
   // Implement iterable protocol.
-  [Symbol.iterator](): Iterator<Token> {
+  [Symbol.iterator](): Iterator<Token<T>> {
     return this;
   }
 }
