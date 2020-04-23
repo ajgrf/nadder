@@ -71,9 +71,9 @@ describe("NadderLexer", () => {
   });
 
   it("should lex ints, identifiers, and indents", () => {
-    let input = `five = 5
-ten = 10
-add = lambda x, y: x + y
+    let input = `let five = 5
+let ten = 10
+let add = lambda x, y: x + y
 
 def add_10(x):
     return add(x, ten)
@@ -83,20 +83,23 @@ if not 5 < 10:
 else:
     return False
 
-result = add_10(five)
+let result = add_10(five)
 `;
 
     testLexer(new lex.NadderLexer(input), [
+      new Token(TokenType.Let, "let"),
       new Token(TokenType.Identifier, "five"),
       new Token(TokenType.Assign, "="),
       new Token(TokenType.Int, "5"),
       new Token(TokenType.Newline, "\n"),
 
+      new Token(TokenType.Let, "let"),
       new Token(TokenType.Identifier, "ten"),
       new Token(TokenType.Assign, "="),
       new Token(TokenType.Int, "10"),
       new Token(TokenType.Newline, "\n"),
 
+      new Token(TokenType.Let, "let"),
       new Token(TokenType.Identifier, "add"),
       new Token(TokenType.Assign, "="),
       new Token(TokenType.Lambda, "lambda"),
@@ -148,6 +151,7 @@ result = add_10(five)
       new Token(TokenType.Newline, "\n"),
       new Token(TokenType.Dedent, ""),
 
+      new Token(TokenType.Let, "let"),
       new Token(TokenType.Identifier, "result"),
       new Token(TokenType.Assign, "="),
       new Token(TokenType.Identifier, "add_10"),
