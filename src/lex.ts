@@ -229,10 +229,38 @@ export class NadderLexer implements Iterable<Token<TokenType>> {
     let char = lex.nextChar();
     switch (char) {
       case "=":
-        lex.emit(TokenType.Assign);
+        if (lex.peek() === "=") {
+          lex.nextChar();
+          lex.emit(TokenType.EQ);
+        } else {
+          lex.emit(TokenType.Assign);
+        }
         break;
       case "+":
         lex.emit(TokenType.Plus);
+        break;
+      case "-":
+        lex.emit(TokenType.Minus);
+        break;
+      case "*":
+        lex.emit(TokenType.Asterisk);
+        break;
+      case "/":
+        lex.emit(TokenType.Slash);
+        break;
+      case "!":
+        if (lex.peek() === "=") {
+          lex.nextChar();
+          lex.emit(TokenType.NEQ);
+        } else {
+          return lex.errorf(`expected '=', found '${char}'`);
+        }
+        break;
+      case "<":
+        lex.emit(TokenType.LT);
+        break;
+      case ">":
+        lex.emit(TokenType.GT);
         break;
       case "(":
         lex.emit(TokenType.LParen);

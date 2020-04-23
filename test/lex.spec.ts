@@ -51,14 +51,21 @@ describe("Lexer", () => {
 
 describe("NadderLexer", () => {
   it("should lex symbols correctly", () => {
-    let input = `=+(),:`;
+    let input = `=+-*/<>(),: == !=`;
     testLexer(new lex.NadderLexer(input), [
       new lex.Token(lex.TokenType.Assign, "="),
       new lex.Token(lex.TokenType.Plus, "+"),
+      new lex.Token(lex.TokenType.Minus, "-"),
+      new lex.Token(lex.TokenType.Asterisk, "*"),
+      new lex.Token(lex.TokenType.Slash, "/"),
+      new lex.Token(lex.TokenType.LT, "<"),
+      new lex.Token(lex.TokenType.GT, ">"),
       new lex.Token(lex.TokenType.LParen, "("),
       new lex.Token(lex.TokenType.RParen, ")"),
       new lex.Token(lex.TokenType.Comma, ","),
       new lex.Token(lex.TokenType.Colon, ":"),
+      new lex.Token(lex.TokenType.EQ, "=="),
+      new lex.Token(lex.TokenType.NEQ, "!="),
     ]);
   });
 
