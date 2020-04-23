@@ -30,7 +30,7 @@ function readSexp(l: lex.Lexer<lex.TokenType>): lex.StateFn<lex.TokenType> {
       return undefined;
     default:
       l.acceptRun(lex.alphanumeric + "'+-*/?!");
-      l.emit(lex.TokenType.Ident);
+      l.emit(lex.TokenType.Identifier);
   }
 
   return readSexp;
@@ -41,10 +41,24 @@ describe("Lexer", () => {
     let input = " (+  foo 1)";
     testLexer(new lex.Lexer<lex.TokenType>(input, readSexp), [
       new lex.Token(lex.TokenType.LParen, "("),
-      new lex.Token(lex.TokenType.Ident, "+"),
-      new lex.Token(lex.TokenType.Ident, "foo"),
-      new lex.Token(lex.TokenType.Ident, "1"),
+      new lex.Token(lex.TokenType.Identifier, "+"),
+      new lex.Token(lex.TokenType.Identifier, "foo"),
+      new lex.Token(lex.TokenType.Identifier, "1"),
       new lex.Token(lex.TokenType.RParen, ")"),
+    ]);
+  });
+});
+
+describe("NadderLexer", () => {
+  it("should lex symbols correctly", () => {
+    let input = `=+(),:`;
+    testLexer(new lex.NadderLexer(input), [
+      new lex.Token(lex.TokenType.Assign, "="),
+      new lex.Token(lex.TokenType.Plus, "+"),
+      new lex.Token(lex.TokenType.LParen, "("),
+      new lex.Token(lex.TokenType.RParen, ")"),
+      new lex.Token(lex.TokenType.Comma, ","),
+      new lex.Token(lex.TokenType.Colon, ":"),
     ]);
   });
 });

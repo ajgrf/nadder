@@ -20,13 +20,6 @@ export class Token<T> {
   constructor(public type: TokenTag<T>, public value: string) {}
 }
 
-/** Lexical categories for tokens. */
-export enum TokenType {
-  Ident,
-  LParen,
-  RParen,
-}
-
 /** The Lexer state as a function returning the new state. */
 export type StateFn<T> = undefined | ((lex: Lexer<T>) => StateFn<T>);
 
@@ -51,7 +44,7 @@ export class Lexer<T> implements Iterable<Token<T>> {
     this.start = 0;
     this.pos = 0;
     this.width = 1;
-    this.tokens = new Array();
+    this.tokens = new Array<Token<T>>();
     this.state = start;
   }
 
@@ -139,6 +132,93 @@ export class Lexer<T> implements Iterable<Token<T>> {
 
   // Implement iterable protocol.
   [Symbol.iterator](): Iterator<Token<T>> {
+    return this;
+  }
+}
+
+/** Lexical categories for Nadder tokens. */
+export enum TokenType {
+  // Identifiers + literals
+  Identifier,
+
+  // Operators
+  Assign,
+  Plus,
+  Minus,
+  Asterisk,
+  Slash,
+
+  LT,
+  GT,
+  EQ,
+  NEQ,
+
+  // Delimiters
+  Comma,
+  Colon,
+  LParen,
+  RParen,
+
+  Newline,
+  Indent,
+  Dedent,
+
+  // Keywords
+  Return,
+}
+
+/** A Lexer instantiated for the Nadder language. */
+export class NadderLexer implements Iterable<Token<TokenType>> {
+  /** Underlying lexer. */
+  private lexer: Lexer<TokenType>;
+
+  /** Stack of indentation levels. */
+  private indents: number[];
+
+  constructor(input: string) {
+    this.lexer = new Lexer<TokenType>(input, this.lexExpression.bind(this));
+    this.indents = [0];
+  }
+
+  private lexExpression(lex: Lexer<TokenType>): StateFn<TokenType> {
+    let char = lex.nextChar();
+    switch (char) {
+      case "=":
+        lex.emit(TokenType.Assign);
+        break;
+      case "+":
+        lex.emit(TokenType.Plus);
+        break;
+      case "(":
+        lex.emit(TokenType.LParen);
+        break;
+      case ")":
+        lex.emit(TokenType.RParen);
+        break;
+      case ",":
+        lex.emit(TokenType.Comma);
+        break;
+      case ":":
+        lex.emit(TokenType.Colon);
+        break;
+      case eof:
+        lex.emit("EOF");
+        return undefined;
+      default:
+        lex.acceptRun(alphanumeric);
+        lex.emit(TokenType.Identifier);
+    }
+
+    return this.lexExpression.bind(this);
+  }
+
+  // Implement iterator protocol.
+  next(): IteratorResult<Token<TokenType>> {
+    return this.lexer.next();
+  }
+
+  // Implement iterable protocol.
+  [Symbol.iterator](): Iterator<Token<TokenType>> {
     return this;
   }
 }
