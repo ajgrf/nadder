@@ -166,6 +166,11 @@ export enum TokenType {
   // Keywords
   Def,
   Lambda,
+  True,
+  False,
+  If,
+  Else,
+  Not,
   Return,
 }
 
@@ -298,6 +303,11 @@ export class NadderLexer implements Iterable<Token<TokenType>> {
   private keywords: { [key: string]: TokenType } = {
     def: TokenType.Def,
     lambda: TokenType.Lambda,
+    True: TokenType.True,
+    False: TokenType.False,
+    if: TokenType.If,
+    else: TokenType.Else,
+    not: TokenType.Not,
     return: TokenType.Return,
   };
 

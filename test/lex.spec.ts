@@ -78,6 +78,11 @@ add = lambda x, y: x + y
 def add_10(x):
     return add(x, ten)
 
+if not 5 < 10:
+    return True
+else:
+    return False
+
 result = add_10(five)
 `;
 
@@ -86,10 +91,12 @@ result = add_10(five)
       new Token(TokenType.Assign, "="),
       new Token(TokenType.Int, "5"),
       new Token(TokenType.Newline, "\n"),
+
       new Token(TokenType.Identifier, "ten"),
       new Token(TokenType.Assign, "="),
       new Token(TokenType.Int, "10"),
       new Token(TokenType.Newline, "\n"),
+
       new Token(TokenType.Identifier, "add"),
       new Token(TokenType.Assign, "="),
       new Token(TokenType.Lambda, "lambda"),
@@ -101,6 +108,7 @@ result = add_10(five)
       new Token(TokenType.Plus, "+"),
       new Token(TokenType.Identifier, "y"),
       new Token(TokenType.Newline, "\n"),
+
       new Token(TokenType.Def, "def"),
       new Token(TokenType.Identifier, "add_10"),
       new Token(TokenType.LParen, "("),
@@ -118,6 +126,28 @@ result = add_10(five)
       new Token(TokenType.RParen, ")"),
       new Token(TokenType.Newline, "\n"),
       new Token(TokenType.Dedent, ""),
+
+      new Token(TokenType.If, "if"),
+      new Token(TokenType.Not, "not"),
+      new Token(TokenType.Int, "5"),
+      new Token(TokenType.LT, "<"),
+      new Token(TokenType.Int, "10"),
+      new Token(TokenType.Colon, ":"),
+      new Token(TokenType.Newline, "\n"),
+      new Token(TokenType.Indent, "    "),
+      new Token(TokenType.Return, "return"),
+      new Token(TokenType.True, "True"),
+      new Token(TokenType.Newline, "\n"),
+      new Token(TokenType.Dedent, ""),
+      new Token(TokenType.Else, "else"),
+      new Token(TokenType.Colon, ":"),
+      new Token(TokenType.Newline, "\n"),
+      new Token(TokenType.Indent, "    "),
+      new Token(TokenType.Return, "return"),
+      new Token(TokenType.False, "False"),
+      new Token(TokenType.Newline, "\n"),
+      new Token(TokenType.Dedent, ""),
+
       new Token(TokenType.Identifier, "result"),
       new Token(TokenType.Assign, "="),
       new Token(TokenType.Identifier, "add_10"),
