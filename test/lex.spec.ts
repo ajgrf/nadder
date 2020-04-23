@@ -4,7 +4,8 @@
 // license that can be found in the LICENSE file.
 
 import assert from "assert";
-import lex = require("../src/lex");
+import * as lex from "../src/lex";
+import { Token, TokenType } from "../src/lex";
 
 /** Test the tokens emitted by `lexer` against `expected` tokens. */
 function testLexer<T>(lexer: Iterable<lex.Token<T>>, expected: lex.Token<T>[]) {
@@ -20,17 +21,17 @@ function readSexp(l: lex.Lexer<lex.TokenType>): lex.StateFn<lex.TokenType> {
       l.ignore();
       break;
     case "(":
-      l.emit(lex.TokenType.LParen);
+      l.emit(TokenType.LParen);
       break;
     case ")":
-      l.emit(lex.TokenType.RParen);
+      l.emit(TokenType.RParen);
       break;
     case lex.eof:
       l.emit("EOF");
       return undefined;
     default:
       l.acceptRun(lex.alphanumeric + "'+-*/?!");
-      l.emit(lex.TokenType.Identifier);
+      l.emit(TokenType.Identifier);
   }
 
   return readSexp;
@@ -39,12 +40,12 @@ function readSexp(l: lex.Lexer<lex.TokenType>): lex.StateFn<lex.TokenType> {
 describe("Lexer", () => {
   it("should lex simple sexp correctly", () => {
     let input = " (+  foo 1)";
-    testLexer(new lex.Lexer<lex.TokenType>(input, readSexp), [
-      new lex.Token(lex.TokenType.LParen, "("),
-      new lex.Token(lex.TokenType.Identifier, "+"),
-      new lex.Token(lex.TokenType.Identifier, "foo"),
-      new lex.Token(lex.TokenType.Identifier, "1"),
-      new lex.Token(lex.TokenType.RParen, ")"),
+    testLexer(new lex.Lexer<TokenType>(input, readSexp), [
+      new Token(TokenType.LParen, "("),
+      new Token(TokenType.Identifier, "+"),
+      new Token(TokenType.Identifier, "foo"),
+      new Token(TokenType.Identifier, "1"),
+      new Token(TokenType.RParen, ")"),
     ]);
   });
 });
@@ -53,19 +54,19 @@ describe("NadderLexer", () => {
   it("should lex symbols correctly", () => {
     let input = `=+-*/<>(),: == !=`;
     testLexer(new lex.NadderLexer(input), [
-      new lex.Token(lex.TokenType.Assign, "="),
-      new lex.Token(lex.TokenType.Plus, "+"),
-      new lex.Token(lex.TokenType.Minus, "-"),
-      new lex.Token(lex.TokenType.Asterisk, "*"),
-      new lex.Token(lex.TokenType.Slash, "/"),
-      new lex.Token(lex.TokenType.LT, "<"),
-      new lex.Token(lex.TokenType.GT, ">"),
-      new lex.Token(lex.TokenType.LParen, "("),
-      new lex.Token(lex.TokenType.RParen, ")"),
-      new lex.Token(lex.TokenType.Comma, ","),
-      new lex.Token(lex.TokenType.Colon, ":"),
-      new lex.Token(lex.TokenType.EQ, "=="),
-      new lex.Token(lex.TokenType.NEQ, "!="),
+      new Token(TokenType.Assign, "="),
+      new Token(TokenType.Plus, "+"),
+      new Token(TokenType.Minus, "-"),
+      new Token(TokenType.Asterisk, "*"),
+      new Token(TokenType.Slash, "/"),
+      new Token(TokenType.LT, "<"),
+      new Token(TokenType.GT, ">"),
+      new Token(TokenType.LParen, "("),
+      new Token(TokenType.RParen, ")"),
+      new Token(TokenType.Comma, ","),
+      new Token(TokenType.Colon, ":"),
+      new Token(TokenType.EQ, "=="),
+      new Token(TokenType.NEQ, "!="),
     ]);
   });
 
@@ -81,49 +82,49 @@ result = add_10(five)
 `;
 
     testLexer(new lex.NadderLexer(input), [
-      new lex.Token(lex.TokenType.Identifier, "five"),
-      new lex.Token(lex.TokenType.Assign, "="),
-      new lex.Token(lex.TokenType.Int, "5"),
-      new lex.Token(lex.TokenType.Newline, "\n"),
-      new lex.Token(lex.TokenType.Identifier, "ten"),
-      new lex.Token(lex.TokenType.Assign, "="),
-      new lex.Token(lex.TokenType.Int, "10"),
-      new lex.Token(lex.TokenType.Newline, "\n"),
-      new lex.Token(lex.TokenType.Identifier, "add"),
-      new lex.Token(lex.TokenType.Assign, "="),
-      new lex.Token(lex.TokenType.Lambda, "lambda"),
-      new lex.Token(lex.TokenType.Identifier, "x"),
-      new lex.Token(lex.TokenType.Comma, ","),
-      new lex.Token(lex.TokenType.Identifier, "y"),
-      new lex.Token(lex.TokenType.Colon, ":"),
-      new lex.Token(lex.TokenType.Identifier, "x"),
-      new lex.Token(lex.TokenType.Plus, "+"),
-      new lex.Token(lex.TokenType.Identifier, "y"),
-      new lex.Token(lex.TokenType.Newline, "\n"),
-      new lex.Token(lex.TokenType.Def, "def"),
-      new lex.Token(lex.TokenType.Identifier, "add_10"),
-      new lex.Token(lex.TokenType.LParen, "("),
-      new lex.Token(lex.TokenType.Identifier, "x"),
-      new lex.Token(lex.TokenType.RParen, ")"),
-      new lex.Token(lex.TokenType.Colon, ":"),
-      new lex.Token(lex.TokenType.Newline, "\n"),
-      new lex.Token(lex.TokenType.Indent, "    "),
-      new lex.Token(lex.TokenType.Return, "return"),
-      new lex.Token(lex.TokenType.Identifier, "add"),
-      new lex.Token(lex.TokenType.LParen, "("),
-      new lex.Token(lex.TokenType.Identifier, "x"),
-      new lex.Token(lex.TokenType.Comma, ","),
-      new lex.Token(lex.TokenType.Identifier, "ten"),
-      new lex.Token(lex.TokenType.RParen, ")"),
-      new lex.Token(lex.TokenType.Newline, "\n"),
-      new lex.Token(lex.TokenType.Dedent, ""),
-      new lex.Token(lex.TokenType.Identifier, "result"),
-      new lex.Token(lex.TokenType.Assign, "="),
-      new lex.Token(lex.TokenType.Identifier, "add_10"),
-      new lex.Token(lex.TokenType.LParen, "("),
-      new lex.Token(lex.TokenType.Identifier, "five"),
-      new lex.Token(lex.TokenType.RParen, ")"),
-      new lex.Token(lex.TokenType.Newline, "\n"),
+      new Token(TokenType.Identifier, "five"),
+      new Token(TokenType.Assign, "="),
+      new Token(TokenType.Int, "5"),
+      new Token(TokenType.Newline, "\n"),
+      new Token(TokenType.Identifier, "ten"),
+      new Token(TokenType.Assign, "="),
+      new Token(TokenType.Int, "10"),
+      new Token(TokenType.Newline, "\n"),
+      new Token(TokenType.Identifier, "add"),
+      new Token(TokenType.Assign, "="),
+      new Token(TokenType.Lambda, "lambda"),
+      new Token(TokenType.Identifier, "x"),
+      new Token(TokenType.Comma, ","),
+      new Token(TokenType.Identifier, "y"),
+      new Token(TokenType.Colon, ":"),
+      new Token(TokenType.Identifier, "x"),
+      new Token(TokenType.Plus, "+"),
+      new Token(TokenType.Identifier, "y"),
+      new Token(TokenType.Newline, "\n"),
+      new Token(TokenType.Def, "def"),
+      new Token(TokenType.Identifier, "add_10"),
+      new Token(TokenType.LParen, "("),
+      new Token(TokenType.Identifier, "x"),
+      new Token(TokenType.RParen, ")"),
+      new Token(TokenType.Colon, ":"),
+      new Token(TokenType.Newline, "\n"),
+      new Token(TokenType.Indent, "    "),
+      new Token(TokenType.Return, "return"),
+      new Token(TokenType.Identifier, "add"),
+      new Token(TokenType.LParen, "("),
+      new Token(TokenType.Identifier, "x"),
+      new Token(TokenType.Comma, ","),
+      new Token(TokenType.Identifier, "ten"),
+      new Token(TokenType.RParen, ")"),
+      new Token(TokenType.Newline, "\n"),
+      new Token(TokenType.Dedent, ""),
+      new Token(TokenType.Identifier, "result"),
+      new Token(TokenType.Assign, "="),
+      new Token(TokenType.Identifier, "add_10"),
+      new Token(TokenType.LParen, "("),
+      new Token(TokenType.Identifier, "five"),
+      new Token(TokenType.RParen, ")"),
+      new Token(TokenType.Newline, "\n"),
     ]);
   });
 });
