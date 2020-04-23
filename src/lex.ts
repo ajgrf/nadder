@@ -9,7 +9,6 @@
 export const alpha = "_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 export const digit = "0123456789";
 export const alphanumeric = alpha + digit;
-export const whitespace = " \t\n\r";
 export const eof = String.fromCharCode(-1);
 
 /** Tag to identify the type of a lexical token. */
@@ -140,6 +139,7 @@ export class Lexer<T> implements Iterable<Token<T>> {
 export enum TokenType {
   // Identifiers + literals
   Identifier,
+  Int,
 
   // Operators
   Assign,
@@ -164,6 +164,8 @@ export enum TokenType {
   Dedent,
 
   // Keywords
+  Def,
+  Lambda,
   Return,
 }
 
@@ -176,11 +178,54 @@ export class NadderLexer implements Iterable<Token<TokenType>> {
   private indents: number[];
 
   constructor(input: string) {
-    this.lexer = new Lexer<TokenType>(input, this.lexExpression.bind(this));
+    this.lexer = new Lexer<TokenType>(input, this.lexIndentation.bind(this));
     this.indents = [0];
   }
 
+  /** Emit Indent and Dedent tokens to delimit blocks by indentation level. */
+  lexIndentation(lex: Lexer<TokenType>): StateFn<TokenType> {
+    // Uses the same algorithm as Python, without allowing tabs:
+    // https://docs.python.org/3/reference/lexical_analysis.html#indentation
+
+    // Discard blank lines.
+    lex.acceptRun("\n\r");
+    lex.ignore();
+
+    lex.acceptRun(" ");
+
+    let indent = lex.pending().length;
+    let prevIndent = this.indents.pop()!;
+
+    if (indent < prevIndent) {
+      for (let i = this.indents.length; i >= 0; i--) {
+        if (indent < prevIndent) {
+          prevIndent = this.indents.pop()!;
+          lex.emit(TokenType.Dedent);
+        } else if (indent === prevIndent) {
+          break;
+        } else {
+          return lex.errorf("inconsistent dedent");
+        }
+      }
+    } else if (indent > prevIndent) {
+      lex.emit(TokenType.Indent);
+    }
+
+    this.indents.push(indent);
+    return this.lexExpression.bind(this);
+  }
+
+  /** Skip ahead to the next non-whitespace input. */
+  eatWhiteSpace(lex: Lexer<TokenType>): StateFn<TokenType> {
+    this.lexer.acceptRun(" ");
+    this.lexer.ignore();
+    return undefined;
+  }
+
+  /** Tokenize a Nadder expression. */
   private lexExpression(lex: Lexer<TokenType>): StateFn<TokenType> {
+    this.eatWhiteSpace(lex);
+
     let char = lex.nextChar();
     switch (char) {
       case "=":
@@ -201,14 +246,55 @@ export class NadderLexer implements Iterable<Token<TokenType>> {
       case ":":
         lex.emit(TokenType.Colon);
         break;
+      case "\n":
+      case "\r":
+        lex.emit(TokenType.Newline);
+        return this.lexIndentation.bind(this);
       case eof:
         lex.emit("EOF");
         return undefined;
       default:
-        lex.acceptRun(alphanumeric);
-        lex.emit(TokenType.Identifier);
+        if (alpha.includes(char)) {
+          return this.lexIdentifier.bind(this);
+        } else if (digit.includes(char)) {
+          return this.lexNumber.bind(this);
+        } else {
+          return lex.errorf(`illegal character: '${char}'`);
+        }
     }
 
+    return this.lexExpression.bind(this);
+  }
+
+  /* Mapping of keywords to TokenTypes. */
+  private keywords: { [key: string]: TokenType } = {
+    def: TokenType.Def,
+    lambda: TokenType.Lambda,
+    return: TokenType.Return,
+  };
+
+  /** Tokenize an identifier or keyword. */
+  private lexIdentifier(lex: Lexer<TokenType>): StateFn<TokenType> {
+    lex.accept(alpha);
+    lex.acceptRun(alphanumeric);
+
+    // Emit keyword token if possible, else an identifier.
+    lex.emit(this.keywords[lex.pending()] || TokenType.Identifier);
+
+    return this.lexExpression.bind(this);
+  }
+
+  /** Tokenize a number. */
+  private lexNumber(lex: Lexer<TokenType>): StateFn<TokenType> {
+    lex.acceptRun(digit);
+
+    // Next thing can't be alphanumeric.
+    if (alpha.includes(lex.peek())) {
+      lex.nextChar();
+      return lex.errorf(`bad number syntax: '${lex.pending()}'`);
+    }
+
+    lex.emit(TokenType.Int);
     return this.lexExpression.bind(this);
   }
 
