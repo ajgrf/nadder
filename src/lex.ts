@@ -189,7 +189,7 @@ export class NadderLexer implements Iterable<Token<TokenType>> {
   }
 
   /** Emit Indent and Dedent tokens to delimit blocks by indentation level. */
-  lexIndentation(lex: Lexer<TokenType>): StateFn<TokenType> {
+  private lexIndentation(lex: Lexer<TokenType>): StateFn<TokenType> {
     // Uses the same algorithm as Python, without allowing tabs:
     // https://docs.python.org/3/reference/lexical_analysis.html#indentation
 
@@ -222,7 +222,7 @@ export class NadderLexer implements Iterable<Token<TokenType>> {
   }
 
   /** Skip ahead to the next non-whitespace input. */
-  eatWhiteSpace(lex: Lexer<TokenType>): StateFn<TokenType> {
+  private eatWhiteSpace(lex: Lexer<TokenType>): StateFn<TokenType> {
     this.lexer.acceptRun(" ");
     this.lexer.ignore();
     return undefined;
