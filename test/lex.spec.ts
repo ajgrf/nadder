@@ -6,6 +6,12 @@
 import assert from "assert";
 import lex = require("../src/lex");
 
+/** Test the tokens emitted by `lexer` against `expected` tokens. */
+function testLexer<T>(lexer: Iterable<lex.Token<T>>, expected: lex.Token<T>[]) {
+  let actual = Array.from(lexer);
+  assert.deepStrictEqual(actual, expected);
+}
+
 /** Tokenize simplified s-expressions. */
 function readSexp(l: lex.Lexer<lex.TokenType>): lex.StateFn<lex.TokenType> {
   let char = l.nextChar();
@@ -30,23 +36,15 @@ function readSexp(l: lex.Lexer<lex.TokenType>): lex.StateFn<lex.TokenType> {
   return readSexp;
 }
 
-let expectedTokens: lex.Token<lex.TokenTag<lex.TokenType>>[] = [
-  new lex.Token(lex.TokenType.LParen, "("),
-  new lex.Token(lex.TokenType.Ident, "+"),
-  new lex.Token(lex.TokenType.Ident, "foo"),
-  new lex.Token(lex.TokenType.Ident, "1"),
-  new lex.Token(lex.TokenType.RParen, ")"),
-  new lex.Token("EOF", ""),
-];
-
 describe("Lexer", () => {
   it("should lex simple sexp correctly", () => {
     let input = " (+  foo 1)";
-    let lexer = new lex.Lexer<lex.TokenType>(input, readSexp);
-    for (let i = 0; i < expectedTokens.length; i++) {
-      let tok = lexer.nextToken();
-      assert.deepStrictEqual(tok, expectedTokens[i]);
-    }
-    assert.throws(lexer.nextToken);
+    testLexer(new lex.Lexer<lex.TokenType>(input, readSexp), [
+      new lex.Token(lex.TokenType.LParen, "("),
+      new lex.Token(lex.TokenType.Ident, "+"),
+      new lex.Token(lex.TokenType.Ident, "foo"),
+      new lex.Token(lex.TokenType.Ident, "1"),
+      new lex.Token(lex.TokenType.RParen, ")"),
+    ]);
   });
 });
