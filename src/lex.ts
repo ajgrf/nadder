@@ -15,8 +15,9 @@ export const eof = String.fromCharCode(-1);
 export type TokenTag<T> = T | "EOF" | "Illegal";
 
 /** A Token consists of a type tag attached to the literal string. */
-export class Token<T> {
-  constructor(public type: TokenTag<T>, public value: string) {}
+export interface Token<T> {
+  type: TokenTag<T>;
+  value: string;
 }
 
 /** The Lexer state as a function returning the new state. */
@@ -62,7 +63,7 @@ export class Lexer<T> implements Iterable<Token<T>> {
 
   /** Emit a token with the given TokenType and accepted input. */
   emit(t: TokenTag<T>) {
-    this.tokens.push(new Token<T>(t, this.pending()));
+    this.tokens.push({ type: t, value: this.pending() });
     this.start = this.pos;
   }
 
@@ -116,7 +117,7 @@ export class Lexer<T> implements Iterable<Token<T>> {
 
   /** Signal error by emitting an Illegal Token with the given message. */
   errorf(message: string): StateFn<T> {
-    this.tokens.push(new Token<T>("Illegal", message));
+    this.tokens.push({ type: "Illegal", value: message });
     return undefined;
   }
 
