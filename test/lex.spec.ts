@@ -13,43 +13,6 @@ function testLexer<T>(lexer: Iterable<lex.Token<T>>, expected: lex.Token<T>[]) {
   assert.deepStrictEqual(actual, expected);
 }
 
-/** Tokenize simplified s-expressions. */
-function readSexp(l: lex.Lexer<lex.TokenType>): lex.StateFn<lex.TokenType> {
-  let char = l.nextChar();
-  switch (char) {
-    case " ":
-      l.ignore();
-      break;
-    case "(":
-      l.emit(TokenType.LParen);
-      break;
-    case ")":
-      l.emit(TokenType.RParen);
-      break;
-    case lex.eof:
-      l.emit("EOF");
-      return undefined;
-    default:
-      l.acceptRun(lex.alphanumeric + "'+-*/?!");
-      l.emit(TokenType.Identifier);
-  }
-
-  return readSexp;
-}
-
-describe("Lexer", () => {
-  it("should lex simple sexp correctly", () => {
-    let input = " (+  foo 1)";
-    testLexer(lex.newLexer<TokenType>(input, readSexp), [
-      { value: "(", type: TokenType.LParen },
-      { value: "+", type: TokenType.Identifier },
-      { value: "foo", type: TokenType.Identifier },
-      { value: "1", type: TokenType.Identifier },
-      { value: ")", type: TokenType.RParen },
-    ]);
-  });
-});
-
 describe("tokenize", () => {
   it("should lex symbols correctly", () => {
     let input = `=+-*/<>(),: == !=`;
