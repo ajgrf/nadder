@@ -74,10 +74,10 @@ const keywords: { [key: string]: TokenType } = {
 };
 
 /** The Lexer state as a function returning the new state. */
-export type StateFn<T> = undefined | ((lex: Lexer<T>) => StateFn<T>);
+type StateFn<T> = undefined | ((lex: Lexer<T>) => StateFn<T>);
 
 /** Generic lexer machinery without language-specific bits. */
-export interface Lexer<T> {
+interface Lexer<T> {
   nextToken: () => Token<T>;
   emit: (t: TokenTag<T>) => void;
   pending: () => string;
@@ -91,7 +91,7 @@ export interface Lexer<T> {
 }
 
 /** Initialize a Lexer to tokenize `input` given start `state`. */
-export function newLexer<T>(input: string, state: StateFn<T>): Lexer<T> {
+function newLexer<T>(input: string, state: StateFn<T>): Lexer<T> {
   let lexer: Lexer<T> = {
     nextToken,
     emit,
