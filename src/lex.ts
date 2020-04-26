@@ -77,7 +77,8 @@ const keywords: { [key: string]: TokenType } = {
 export type StateFn<T> = undefined | ((lex: Lexer<T>) => StateFn<T>);
 
 /** Generic lexer machinery without language-specific bits. */
-export interface Lexer<T> extends Iterable<Token<T>>, Iterator<Token<T>> {
+export interface Lexer<T> {
+  nextToken: () => Token<T>;
   emit: (t: TokenTag<T>) => void;
   pending: () => string;
   nextChar: () => string;
@@ -92,6 +93,7 @@ export interface Lexer<T> extends Iterable<Token<T>>, Iterator<Token<T>> {
 /** Initialize a Lexer to tokenize `input` given start `state`. */
 export function newLexer<T>(input: string, state: StateFn<T>): Lexer<T> {
   let lexer: Lexer<T> = {
+    nextToken,
     emit,
     pending,
     nextChar,
@@ -101,8 +103,6 @@ export function newLexer<T>(input: string, state: StateFn<T>): Lexer<T> {
     accept,
     acceptRun,
     errorf,
-    next,
-    [Symbol.iterator]: iterator,
   };
 
   let start: number = 0; // Start position of this token
@@ -188,20 +188,6 @@ export function newLexer<T>(input: string, state: StateFn<T>): Lexer<T> {
     return undefined;
   }
 
-  // Implement iterator protocol.
-  function next(): IteratorResult<Token<T>> {
-    let tok = nextToken();
-    return {
-      value: tok,
-      done: tok.type === "EOF",
-    };
-  }
-
-  // Implement iterable protocol.
-  function iterator(): Iterator<Token<T>> {
-    return { next };
-  }
-
   return lexer;
 }
 
@@ -209,6 +195,9 @@ export function newLexer<T>(input: string, state: StateFn<T>): Lexer<T> {
 export function tokenize(input: string): Iterable<Token<TokenType>> {
   // Underlying lexer
   let lexer = newLexer<TokenType>(input, lexIndentation);
+
+  // Tokens read from the lexer so far
+  let tokens: Token<TokenType>[] = [];
 
   // Stack of indentation levels
   let indents: number[] = [0];
@@ -350,13 +339,26 @@ export function tokenize(input: string): Iterable<Token<TokenType>> {
     return lexExpression;
   }
 
-  // Implement iterator protocol.
-  function next(): IteratorResult<Token<TokenType>> {
-    return lexer.next();
-  }
-
   // Implement iterable protocol.
   function iterator(): Iterator<Token<TokenType>> {
+    let i: number = 0;
+    function next(): IteratorResult<Token<TokenType>> {
+      let tok: Token<TokenType>;
+      if (i < tokens.length) {
+        tok = tokens[i];
+      } else {
+        tok = lexer.nextToken();
+        tokens.push(tok);
+      }
+
+      i += 1;
+
+      return {
+        value: tok,
+        done: tok.type === "EOF",
+      };
+    }
+
     return { next };
   }
 
