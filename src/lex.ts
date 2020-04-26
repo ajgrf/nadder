@@ -214,12 +214,13 @@ export function tokenize(input: string): Iterable<Token<TokenType>> {
     lex.acceptRun(" ");
 
     let indent = lex.pending().length;
-    let prevIndent = indents.pop()!;
+    let prevIndent = indents[indents.length - 1];
 
     if (indent < prevIndent) {
       for (let i = indents.length; i >= 0; i--) {
         if (indent < prevIndent) {
-          prevIndent = indents.pop()!;
+          indents.pop();
+          prevIndent = indents[indents.length - 1];
           lex.emit(TokenType.Dedent);
         } else if (indent === prevIndent) {
           break;
@@ -229,9 +230,9 @@ export function tokenize(input: string): Iterable<Token<TokenType>> {
       }
     } else if (indent > prevIndent) {
       lex.emit(TokenType.Indent);
+      indents.push(indent);
     }
 
-    indents.push(indent);
     return lexExpression;
   }
 

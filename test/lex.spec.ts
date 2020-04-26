@@ -124,4 +124,40 @@ let result = add_10(five)
       { value: "\n", type: TokenType.Newline },
     ]);
   });
+
+  it("should balance indents and dedents", () => {
+    let input = `
+def foo():
+
+    if True:
+        bar
+    else:
+        baz
+`;
+    testLexer(lex.tokenize(input), [
+      { value: "def", type: TokenType.Def },
+      { value: "foo", type: TokenType.Identifier },
+      { value: "(", type: TokenType.LParen },
+      { value: ")", type: TokenType.RParen },
+      { value: ":", type: TokenType.Colon },
+      { value: "\n", type: TokenType.Newline },
+      { value: "    ", type: TokenType.Indent },
+      { value: "if", type: TokenType.If },
+      { value: "True", type: TokenType.True },
+      { value: ":", type: TokenType.Colon },
+      { value: "\n", type: TokenType.Newline },
+      { value: "        ", type: TokenType.Indent },
+      { value: "bar", type: TokenType.Identifier },
+      { value: "\n", type: TokenType.Newline },
+      { value: "    ", type: TokenType.Dedent },
+      { value: "else", type: TokenType.Else },
+      { value: ":", type: TokenType.Colon },
+      { value: "\n", type: TokenType.Newline },
+      { value: "        ", type: TokenType.Indent },
+      { value: "baz", type: TokenType.Identifier },
+      { value: "\n", type: TokenType.Newline },
+      { value: "", type: TokenType.Dedent },
+      { value: "", type: TokenType.Dedent },
+    ]);
+  });
 });
