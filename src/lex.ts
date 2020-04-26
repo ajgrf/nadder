@@ -24,37 +24,46 @@ export interface Token<T> {
 export type StateFn<T> = undefined | ((lex: Lexer<T>) => StateFn<T>);
 
 /** Generic lexer machinery without language-specific bits. */
-export class Lexer<T> implements Iterable<Token<T>> {
-  /** The string being lexed. */
-  private input: string;
-  /** Start position of this token. */
-  private start: number;
-  /** Current position in the input. */
-  private pos: number;
-  /** Width of last character read from input. */
-  private width: number;
-  /** FIFO array of lexed tokens. */
-  private tokens: Token<T>[];
-  /** Current lexer state. */
-  private state: StateFn<T>;
+export interface Lexer<T> extends Iterable<Token<T>>, Iterator<Token<T>> {
+  emit: (t: TokenTag<T>) => void;
+  pending: () => string;
+  nextChar: () => string;
+  ignore: () => void;
+  backUp: () => void;
+  peek: () => string;
+  accept: (valid: string) => boolean;
+  acceptRun: (valid: string) => void;
+  errorf: (message: string) => StateFn<T>;
+}
 
-  /** Initialize a Lexer to tokenize `input` given `start` state. */
-  constructor(input: string, start: StateFn<T>) {
-    this.input = input;
-    this.start = 0;
-    this.pos = 0;
-    this.width = 0;
-    this.tokens = new Array<Token<T>>();
-    this.state = start;
-  }
+/** Initialize a Lexer to tokenize `input` given start `state`. */
+export function newLexer<T>(input: string, state: StateFn<T>): Lexer<T> {
+  let lexer: Lexer<T> = {
+    emit,
+    pending,
+    nextChar,
+    ignore,
+    backUp,
+    peek,
+    accept,
+    acceptRun,
+    errorf,
+    next,
+    [Symbol.iterator]: iterator,
+  };
+
+  let start: number = 0; // Start position of this token
+  let pos: number = 0; // Current position in the input
+  let width: number = 0; // Width of last character read from input
+  let tokens: Token<T>[] = []; // FIFO array of lexed tokens
 
   /** Return the next token. */
-  nextToken(): Token<T> {
+  function nextToken(): Token<T> {
     while (true) {
-      if (this.tokens.length > 0) {
-        return this.tokens.shift()!;
-      } else if (this.state) {
-        this.state = this.state(this);
+      if (tokens.length > 0) {
+        return tokens.shift()!;
+      } else if (state) {
+        state = state(lexer);
       } else {
         throw "Bad lexer state!";
       }
@@ -62,73 +71,73 @@ export class Lexer<T> implements Iterable<Token<T>> {
   }
 
   /** Emit a token with the given TokenType and accepted input. */
-  emit(t: TokenTag<T>) {
-    this.tokens.push({ type: t, value: this.pending() });
-    this.start = this.pos;
+  function emit(t: TokenTag<T>) {
+    tokens.push({ type: t, value: pending() });
+    start = pos;
   }
 
   /** Return the input accepted so far. */
-  pending(): string {
-    return this.input.slice(this.start, this.pos);
+  function pending(): string {
+    return input.slice(start, pos);
   }
 
   /** Advance lexer to the next input character and return it. */
-  nextChar(): string {
-    if (this.pos >= this.input.length) {
-      this.width = 0;
+  function nextChar(): string {
+    if (pos >= input.length) {
+      width = 0;
       return eof;
     }
-    let char = this.input[this.pos];
-    let rune = this.input.codePointAt(this.pos);
+    let char = input[pos];
+    let rune = input.codePointAt(pos);
     if (rune) {
       char = String.fromCodePoint(rune);
     }
-    this.width = char.length;
-    this.pos += this.width;
+    width = char.length;
+    pos += width;
     return char;
   }
 
   /** Discard pending input. */
-  ignore() {
-    this.start = this.pos;
+  function ignore() {
+    start = pos;
   }
 
   /** Go back one character in the input. */
-  backUp() {
-    this.pos -= this.width;
+  function backUp() {
+    pos -= width;
   }
 
   /** Return the next input character without advancing. */
-  peek(): string {
-    let char = this.nextChar();
-    this.backUp();
+  function peek(): string {
+    let char = nextChar();
+    backUp();
     return char;
   }
 
   /** Advance one character if it appears in `valid`. */
-  accept(valid: string): boolean {
-    if (valid.indexOf(this.nextChar()) >= 0) {
+  function accept(valid: string): boolean {
+    if (valid.indexOf(nextChar()) >= 0) {
       return true;
     } else {
-      this.backUp();
+      backUp();
       return false;
     }
   }
 
   /** Advance while characters appear in `valid`. */
-  acceptRun(valid: string) {
-    while (this.accept(valid)) {}
+  function acceptRun(valid: string) {
+    while (accept(valid)) {}
   }
 
   /** Signal error by emitting an Illegal Token with the given message. */
-  errorf(message: string): StateFn<T> {
-    this.tokens.push({ type: "Illegal", value: message });
+  function errorf(message: string): StateFn<T> {
+    tokens.push({ type: "Illegal", value: message });
     return undefined;
   }
 
   // Implement iterator protocol.
-  next(): IteratorResult<Token<T>> {
-    let tok = this.nextToken();
+  function next(): IteratorResult<Token<T>> {
+    let tok = nextToken();
     return {
       value: tok,
       done: tok.type === "EOF",
@@ -136,9 +145,11 @@ export class Lexer<T> implements Iterable<Token<T>> {
   }
 
   // Implement iterable protocol.
-  [Symbol.iterator](): Iterator<Token<T>> {
-    return this;
+  function iterator(): Iterator<Token<T>> {
+    return { next };
   }
+
+  return lexer;
 }
 
 /** Lexical categories for Nadder tokens. */
@@ -190,7 +201,7 @@ export class NadderLexer implements Iterable<Token<TokenType>> {
   private indents: number[];
 
   constructor(input: string) {
-    this.lexer = new Lexer<TokenType>(input, this.lexIndentation.bind(this));
+    this.lexer = newLexer<TokenType>(input, this.lexIndentation.bind(this));
     this.indents = [0];
   }
 

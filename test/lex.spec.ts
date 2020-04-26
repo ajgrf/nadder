@@ -40,7 +40,7 @@ function readSexp(l: lex.Lexer<lex.TokenType>): lex.StateFn<lex.TokenType> {
 describe("Lexer", () => {
   it("should lex simple sexp correctly", () => {
     let input = " (+  foo 1)";
-    testLexer(new lex.Lexer<TokenType>(input, readSexp), [
+    testLexer(lex.newLexer<TokenType>(input, readSexp), [
       { value: "(", type: TokenType.LParen },
       { value: "+", type: TokenType.Identifier },
       { value: "foo", type: TokenType.Identifier },
