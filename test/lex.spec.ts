@@ -50,10 +50,10 @@ describe("Lexer", () => {
   });
 });
 
-describe("NadderLexer", () => {
+describe("tokenize", () => {
   it("should lex symbols correctly", () => {
     let input = `=+-*/<>(),: == !=`;
-    testLexer(new lex.NadderLexer(input), [
+    testLexer(lex.tokenize(input), [
       { value: "=", type: TokenType.Assign },
       { value: "+", type: TokenType.Plus },
       { value: "-", type: TokenType.Minus },
@@ -86,7 +86,7 @@ else:
 let result = add_10(five)
 `;
 
-    testLexer(new lex.NadderLexer(input), [
+    testLexer(lex.tokenize(input), [
       { value: "let", type: TokenType.Let },
       { value: "five", type: TokenType.Identifier },
       { value: "=", type: TokenType.Assign },

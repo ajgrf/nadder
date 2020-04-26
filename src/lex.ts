@@ -20,6 +20,59 @@ export interface Token<T> {
   value: string;
 }
 
+/** Lexical categories for Nadder tokens. */
+export enum TokenType {
+  // Identifiers + literals
+  Identifier,
+  Int,
+
+  // Operators
+  Assign,
+  Plus,
+  Minus,
+  Asterisk,
+  Slash,
+
+  LT,
+  GT,
+  EQ,
+  NEQ,
+
+  // Delimiters
+  Comma,
+  Colon,
+  LParen,
+  RParen,
+
+  Newline,
+  Indent,
+  Dedent,
+
+  // Keywords
+  Def,
+  Lambda,
+  Let,
+  True,
+  False,
+  If,
+  Else,
+  Not,
+  Return,
+}
+
+/* Mapping of keywords to TokenTypes. */
+const keywords: { [key: string]: TokenType } = {
+  def: TokenType.Def,
+  lambda: TokenType.Lambda,
+  let: TokenType.Let,
+  True: TokenType.True,
+  False: TokenType.False,
+  if: TokenType.If,
+  else: TokenType.Else,
+  not: TokenType.Not,
+  return: TokenType.Return,
+};
+
 /** The Lexer state as a function returning the new state. */
 export type StateFn<T> = undefined | ((lex: Lexer<T>) => StateFn<T>);
 
@@ -152,61 +205,16 @@ export function newLexer<T>(input: string, state: StateFn<T>): Lexer<T> {
   return lexer;
 }
 
-/** Lexical categories for Nadder tokens. */
-export enum TokenType {
-  // Identifiers + literals
-  Identifier,
-  Int,
+/** Return a stream of tokens for the Nadder source `input`. */
+export function tokenize(input: string): Iterable<Token<TokenType>> {
+  // Underlying lexer
+  let lexer = newLexer<TokenType>(input, lexIndentation);
 
-  // Operators
-  Assign,
-  Plus,
-  Minus,
-  Asterisk,
-  Slash,
-
-  LT,
-  GT,
-  EQ,
-  NEQ,
-
-  // Delimiters
-  Comma,
-  Colon,
-  LParen,
-  RParen,
-
-  Newline,
-  Indent,
-  Dedent,
-
-  // Keywords
-  Def,
-  Lambda,
-  Let,
-  True,
-  False,
-  If,
-  Else,
-  Not,
-  Return,
-}
-
-/** A Lexer instantiated for the Nadder language. */
-export class NadderLexer implements Iterable<Token<TokenType>> {
-  /** Underlying lexer. */
-  private lexer: Lexer<TokenType>;
-
-  /** Stack of indentation levels. */
-  private indents: number[];
-
-  constructor(input: string) {
-    this.lexer = newLexer<TokenType>(input, this.lexIndentation.bind(this));
-    this.indents = [0];
-  }
+  // Stack of indentation levels
+  let indents: number[] = [0];
 
   /** Emit Indent and Dedent tokens to delimit blocks by indentation level. */
-  private lexIndentation(lex: Lexer<TokenType>): StateFn<TokenType> {
+  function lexIndentation(lex: Lexer<TokenType>): StateFn<TokenType> {
     // Uses the same algorithm as Python, without allowing tabs:
     // https://docs.python.org/3/reference/lexical_analysis.html#indentation
 
@@ -217,12 +225,12 @@ export class NadderLexer implements Iterable<Token<TokenType>> {
     lex.acceptRun(" ");
 
     let indent = lex.pending().length;
-    let prevIndent = this.indents.pop()!;
+    let prevIndent = indents.pop()!;
 
     if (indent < prevIndent) {
-      for (let i = this.indents.length; i >= 0; i--) {
+      for (let i = indents.length; i >= 0; i--) {
         if (indent < prevIndent) {
-          prevIndent = this.indents.pop()!;
+          prevIndent = indents.pop()!;
           lex.emit(TokenType.Dedent);
         } else if (indent === prevIndent) {
           break;
@@ -234,20 +242,20 @@ export class NadderLexer implements Iterable<Token<TokenType>> {
       lex.emit(TokenType.Indent);
     }
 
-    this.indents.push(indent);
-    return this.lexExpression.bind(this);
+    indents.push(indent);
+    return lexExpression;
   }
 
   /** Skip ahead to the next non-whitespace input. */
-  private eatWhiteSpace(lex: Lexer<TokenType>): StateFn<TokenType> {
-    this.lexer.acceptRun(" ");
-    this.lexer.ignore();
+  function eatWhiteSpace(lex: Lexer<TokenType>): StateFn<TokenType> {
+    lex.acceptRun(" ");
+    lex.ignore();
     return undefined;
   }
 
   /** Tokenize a Nadder expression. */
-  private lexExpression(lex: Lexer<TokenType>): StateFn<TokenType> {
-    this.eatWhiteSpace(lex);
+  function lexExpression(lex: Lexer<TokenType>): StateFn<TokenType> {
+    eatWhiteSpace(lex);
 
     let char = lex.nextChar();
     switch (char) {
@@ -300,49 +308,36 @@ export class NadderLexer implements Iterable<Token<TokenType>> {
       case "\n":
       case "\r":
         lex.emit(TokenType.Newline);
-        return this.lexIndentation.bind(this);
+        return lexIndentation;
       case eof:
         lex.emit("EOF");
         return undefined;
       default:
         if (alpha.includes(char)) {
-          return this.lexIdentifier.bind(this);
+          return lexIdentifier;
         } else if (digit.includes(char)) {
-          return this.lexNumber.bind(this);
+          return lexNumber;
         } else {
           return lex.errorf(`illegal character: '${char}'`);
         }
     }
 
-    return this.lexExpression.bind(this);
+    return lexExpression;
   }
 
-  /* Mapping of keywords to TokenTypes. */
-  private keywords: { [key: string]: TokenType } = {
-    def: TokenType.Def,
-    lambda: TokenType.Lambda,
-    let: TokenType.Let,
-    True: TokenType.True,
-    False: TokenType.False,
-    if: TokenType.If,
-    else: TokenType.Else,
-    not: TokenType.Not,
-    return: TokenType.Return,
-  };
-
   /** Tokenize an identifier or keyword. */
-  private lexIdentifier(lex: Lexer<TokenType>): StateFn<TokenType> {
+  function lexIdentifier(lex: Lexer<TokenType>): StateFn<TokenType> {
     lex.accept(alpha);
     lex.acceptRun(alphanumeric);
 
     // Emit keyword token if possible, else an identifier.
-    lex.emit(this.keywords[lex.pending()] || TokenType.Identifier);
+    lex.emit(keywords[lex.pending()] || TokenType.Identifier);
 
-    return this.lexExpression.bind(this);
+    return lexExpression;
   }
 
   /** Tokenize a number. */
-  private lexNumber(lex: Lexer<TokenType>): StateFn<TokenType> {
+  function lexNumber(lex: Lexer<TokenType>): StateFn<TokenType> {
     lex.acceptRun(digit);
 
     // Next thing can't be alphanumeric.
@@ -352,16 +347,18 @@ export class NadderLexer implements Iterable<Token<TokenType>> {
     }
 
     lex.emit(TokenType.Int);
-    return this.lexExpression.bind(this);
+    return lexExpression;
   }
 
   // Implement iterator protocol.
-  next(): IteratorResult<Token<TokenType>> {
-    return this.lexer.next();
+  function next(): IteratorResult<Token<TokenType>> {
+    return lexer.next();
   }
 
   // Implement iterable protocol.
-  [Symbol.iterator](): Iterator<Token<TokenType>> {
-    return this;
+  function iterator(): Iterator<Token<TokenType>> {
+    return { next };
   }
+
+  return { [Symbol.iterator]: iterator };
 }
