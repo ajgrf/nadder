@@ -343,7 +343,13 @@ export function tokenize(input: string): Iterable<Token<TokenType>> {
   // Implement iterable protocol.
   function iterator(): Iterator<Token<TokenType>> {
     let i: number = 0;
+    let error: boolean = false;
     function next(): IteratorResult<Token<TokenType>> {
+      // Return early if we've already seen an error or EOF.
+      if (error) {
+        return { done: true, value: undefined };
+      }
+
       let tok: Token<TokenType>;
       if (i < tokens.length) {
         tok = tokens[i];
@@ -353,6 +359,7 @@ export function tokenize(input: string): Iterable<Token<TokenType>> {
       }
 
       i += 1;
+      error = tok.type === "Illegal" || tok.type === "EOF";
 
       return {
         value: tok,

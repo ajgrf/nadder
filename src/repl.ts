@@ -86,10 +86,14 @@ function evaluate(input: string): Iterable<lex.Token<lex.TokenType>> {
 function print(tokens: Iterable<lex.Token<lex.TokenType>>): string {
   let s: string = "";
   for (const tok of tokens) {
-    s += util.format("%O", {
-      value: tok.value,
-      type: lex.TokenType[tok.type as number],
-    });
+    if (tok.type === "Illegal") {
+      s += "error: " + tok.value;
+    } else {
+      s += util.format("%O", {
+        value: tok.value,
+        type: lex.TokenType[tok.type as number],
+      });
+    }
     s += "\n";
   }
   return s;
