@@ -43,7 +43,7 @@ export class Lexer<T> implements Iterable<Token<T>> {
     this.input = input;
     this.start = 0;
     this.pos = 0;
-    this.width = 1;
+    this.width = 0;
     this.tokens = new Array<Token<T>>();
     this.state = start;
   }
@@ -79,6 +79,11 @@ export class Lexer<T> implements Iterable<Token<T>> {
       return eof;
     }
     let char = this.input[this.pos];
+    let rune = this.input.codePointAt(this.pos);
+    if (rune) {
+      char = String.fromCodePoint(rune);
+    }
+    this.width = char.length;
     this.pos += this.width;
     return char;
   }
