@@ -5,6 +5,7 @@
   "scripts": {
     "clean": "rm -rf build/",
     "compile": "tsc",
+    "start": "ts-node src/main.ts",
     "test": "mocha"
   },
   "author": "Alex Griffin <a@ajgrf.com>",
