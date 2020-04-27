@@ -25,7 +25,7 @@ export function start(
   rl.on("line", (line) => {
     let input = prevLines + line + "\n";
     // Check if input is fit to eval.
-    if (isComplete(input)) {
+    if (isComplete(line)) {
       // Eval, print, and reset previous input.
       output.write(print(evaluate(input)));
       prevLines = "";
@@ -44,37 +44,20 @@ export function start(
 }
 
 /**
- * Returns whether `input` is complete enough to evaluate.
- *
- * Only checks if `input` ends in a colon, or indents and dedents are
- * unbalanced.
+ * Returns whether `input` is complete enough to evaluate.  Only checks
+ * if `input` is indented or ends in a colon.
  */
 function isComplete(input: string): boolean {
-  // Remove trailing newline to avoid emitting an extraneous dedent token
-  input = input.slice(0, -1);
-
   let tokens = Array.from(lex.tokenize(input));
-
-  if (
-    tokens.length > 0 &&
-    tokens[tokens.length - 1].type === lex.TokenType.Colon
-  ) {
-    return false;
+  if (tokens.length === 0) {
+    return true;
+  } else {
+    let lastToken = tokens[tokens.length - 1];
+    return (
+      tokens[0].type !== lex.TokenType.Indent &&
+      lastToken.type !== lex.TokenType.Colon
+    );
   }
-
-  let indent = 0;
-  for (const tok of tokens) {
-    switch (tok.type) {
-      case lex.TokenType.Indent:
-        indent += 1;
-        break;
-      case lex.TokenType.Dedent:
-        indent -= 1;
-        break;
-    }
-  }
-
-  return indent === 0;
 }
 
 /** Only tokenizes `input` for now. */
