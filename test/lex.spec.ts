@@ -160,4 +160,23 @@ def foo():
       { value: "", type: TokenType.Dedent },
     ]);
   });
+
+  it("should ignore comments", () => {
+    let input = `# comments start with the hash character
+5+4 == 9  # this one is inline
+return# foo()
+    # indented comments still count as indents `;
+    testLexer(lex.tokenize(input), [
+      { value: "\n", type: TokenType.Newline },
+      { value: "5", type: TokenType.Int },
+      { value: "+", type: TokenType.Plus },
+      { value: "4", type: TokenType.Int },
+      { value: "==", type: TokenType.EQ },
+      { value: "9", type: TokenType.Int },
+      { value: "\n", type: TokenType.Newline },
+      { value: "return", type: TokenType.Return },
+      { value: "\n", type: TokenType.Newline },
+      { value: "    ", type: TokenType.Indent },
+    ]);
+  });
 });

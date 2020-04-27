@@ -243,6 +243,19 @@ export function tokenize(input: string): Iterable<Token<TokenType>> {
     return undefined;
   }
 
+  /** Skip ahead to the end of the current line. */
+  function eatComment(lex: Lexer<TokenType>): StateFn<TokenType> {
+    switch (lex.nextChar()) {
+      case "\n":
+      case "\r":
+      case eof:
+        lex.backUp();
+        lex.ignore();
+        return lexExpression;
+    }
+    return eatComment;
+  }
+
   /** Tokenize a Nadder expression. */
   function lexExpression(lex: Lexer<TokenType>): StateFn<TokenType> {
     eatWhiteSpace(lex);
@@ -295,6 +308,8 @@ export function tokenize(input: string): Iterable<Token<TokenType>> {
       case ":":
         lex.emit(TokenType.Colon);
         break;
+      case "#":
+        return eatComment;
       case "\n":
       case "\r":
         lex.emit(TokenType.Newline);
