@@ -217,7 +217,7 @@ export function tokenize(input: string): Iterable<Token<TokenType>> {
     let prevIndent = indents[indents.length - 1];
 
     if (indent < prevIndent) {
-      for (let i = indents.length; i >= 0; i--) {
+      while (true) {
         if (indent < prevIndent) {
           indents.pop();
           prevIndent = indents[indents.length - 1];
